@@ -1,0 +1,6 @@
+{
+  "openingStock": {"label": "Opening Stock", "type": "number", "required": true},
+  "openingCash": {"label": "Opening Cash", "type": "number", "required": true},
+  "remarks": {"label": "Remarks", "type": "text", "required": false}
+}
+

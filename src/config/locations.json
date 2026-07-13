@@ -1,5 +1,19 @@
 [
-  { "id": 1, "name": "Sector 29" },
-  { "id": 2, "name": "Cyber Hub" }
+  {
+    "id": 1,
+    "name": "Sector 29",
+    "employees": [
+      { "id": 1, "name": "Ayush" }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Cyber Hub",
+    "employees": [
+      { "id": 2, "name": "Aman" }
+    ]
+  }
 ]
+
+
 

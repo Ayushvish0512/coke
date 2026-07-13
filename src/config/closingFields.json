@@ -1,0 +1,7 @@
+{
+  "closingStock": {"label": "Closing Stock", "type": "number", "required": true},
+  "closingCash": {"label": "Closing Cash", "type": "number", "required": true},
+  "damagedQty": {"label": "Damaged Quantity", "type": "number", "required": false},
+  "remarks": {"label": "Remarks", "type": "text", "required": false}
+}
+

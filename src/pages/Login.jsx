@@ -5,16 +5,37 @@ import SelectField from '../components/SelectField.jsx';
 import FormContainer from '../components/FormContainer.jsx';
 import { getUserContext, setUserContext } from '../utils/storage.js';
 import locations from '../config/locations.json';
-import employees from '../config/employees.json';
 
 export default function LoginPage() {
   const existing = getUserContext();
 
-  const [locationId, setLocationId] = useState(existing?.location?.id ? String(existing.location.id) : String(locations[0]?.id ?? ''));
-  const [employeeId, setEmployeeId] = useState(existing?.employee?.id ? String(existing.employee.id) : String(employees[0]?.id ?? ''));
+  const [locationId, setLocationId] = useState(
+    existing?.location?.id
+      ? String(existing.location.id)
+      : String(locations[0]?.id ?? ''),
+  );
 
-  const location = useMemo(() => locations.find((l) => String(l.id) === String(locationId)) || locations[0], [locationId]);
-  const employee = useMemo(() => employees.find((e) => String(e.id) === String(employeeId)) || employees[0], [employeeId]);
+  const [employeeId, setEmployeeId] = useState(
+    existing?.employee?.id
+      ? String(existing.employee.id)
+      : '',
+  );
+
+  const location = useMemo(
+    () => locations.find((l) => String(l.id) === String(locationId)) || locations[0],
+    [locationId],
+  );
+
+  // “Employees” are now expected to come from the selected location data.
+  const employees = useMemo(() => {
+    return location?.employees || location?.employeeList || location?.users || [];
+  }, [location]);
+
+  const employee = useMemo(
+    () => employees.find((e) => String(e.id) === String(employeeId)) || employees[0],
+    [employees, employeeId],
+  );
+
 
   return (
     <div>
