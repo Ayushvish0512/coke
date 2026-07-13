@@ -73,7 +73,7 @@ export default function ClosingPage() {
           closingCash: Number(formData.closingCash),
           damagedQty: formData.damagedQty === '' ? undefined : Number(formData.damagedQty),
           remarks: formData.remarks || '',
-          closingImage: { key: 'closingImage', value: String(closingImageBase64).split(',')[1] || closingImageBase64 },
+          closingImage: { key: 'selfieWithStall', value: String(closingImageBase64).split(',')[1] || closingImageBase64 },
         },
       });
 
@@ -109,7 +109,25 @@ export default function ClosingPage() {
 
 
         <form onSubmit={onSubmit}>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>Selfie with Stall Image</div>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => {
+                const f = e.target.files?.[0] || null;
+                setStallImageFile(f);
+                setStallImageError('');
+              }}
+            />
+            {stallImageError ? (
+              <div style={{ marginTop: 4, color: '#dc2626', fontSize: 12 }}>{stallImageError}</div>
+            ) : null}
+          </div>
+
           {fieldEntries.map(([key, meta]) => (
+
             <InputField
               key={key}
               label={meta.label}

@@ -15,11 +15,12 @@ export default function OperationPage() {
   }
 
   const { employee, location } = ctx;
-  const greeting = 'Good Morning';
-
+    const greeting = 'Good Morning';
+    
   return (
     <div>
-      <Header title={greeting + ' ' + (employee?.name || '')} />
+      <Header title={"Operation" ,greeting + ' ' + (employee?.name || '')}/>
+
       <FormContainer>
         <div style={{ marginBottom: 16, color: '#555' }}>
           <div>
