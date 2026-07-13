@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+
 import Header from '../components/Header.jsx';
 import FormContainer from '../components/FormContainer.jsx';
 import InputField from '../components/InputField.jsx';
@@ -6,21 +7,31 @@ import Button from '../components/Button.jsx';
 import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
 import { sendWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
-import maintenanceFields from '../config/maintenanceFields.json';
-import machineTypes from '../config/maintenanceMachineTypes.json';
+import maintenanceMerged from '../config/maintenanceMerged.json';
 import SelectField from '../components/SelectField.jsx';
+
+const MACHINE_OPTIONS = maintenanceMerged.machineTypes.map((m) => ({ value: m.value, label: m.label }));
 
 export default function MaintenancePage() {
   const ctx = getUserContext();
   const attendanceDone = isAttendanceCompleted();
 
-  const fieldEntries = useMemo(() => Object.entries(maintenanceFields), []);
+  // (Not used currently, but kept since it existed in your original file)
+  const fieldEntries = useMemo(() => Object.entries(maintenanceMerged.fields), []);
 
   const [formData, setFormData] = useState({
+    // solo issue type: machine (Working/Not Working)
     machineType: '',
+    workingStatus: 'OK',
+
+    // solo issue type: branding (OK/Not OK)
     branding: 'OK',
     brandingRemarks: '',
+
+    // general remarks when machine is not working
+    remarks: '',
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -34,7 +45,13 @@ export default function MaintenancePage() {
   async function onSubmit(e) {
     e.preventDefault();
 
-    const nextErrors = validateRequiredFields(formData, maintenanceFields);
+    const payloadForValidation = {
+      ...formData,
+      // remarks only when Not OK
+      remarks: formData.workingStatus === 'Not OK' ? (formData.remarks || '') : '',
+    };
+
+    const nextErrors = validateRequiredFields(payloadForValidation, maintenanceMerged.fields);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
@@ -45,9 +62,14 @@ export default function MaintenancePage() {
         employee: employee?.name,
         operation: 'Maintenance',
         formData: {
+          // Backend keys (used in your earlier mapping)
           machineType: formData.machineType,
-          branding: formData.branding,
-          brandingRemarks: formData.brandingRemarks || '',
+          branding:
+            formData.machineType === 'Branding'
+              ? formData.branding
+              : formData.workingStatus,
+          brandingRemarks: formData.machineType === 'Branding' ? (formData.brandingRemarks || '') : '',
+          remarks: formData.workingStatus === 'Not OK' ? (formData.remarks || '') : '',
         },
       });
 
@@ -61,18 +83,63 @@ export default function MaintenancePage() {
 
   return (
     <div>
-      <Header title="Maintainase" />
+      <Header title="Maintainase" onBack={() => window.location.assign('/operation')} />
+
       <FormContainer>
         <form onSubmit={onSubmit}>
+          {/* Solo issue: machine selection */}
           <SelectField
-            label="Machine"
+            label={maintenanceMerged.fields.machineType.label}
             value={formData.machineType}
             onChange={(v) => setFormData((p) => ({ ...p, machineType: v }))}
-            options={machineTypes.machineTypes.map((m) => ({ value: m.value, label: m.label }))}
+            // remove Branding option from machine dropdown (user requested separate branding)
+            options={MACHINE_OPTIONS.filter((o) => o.value !== 'Branding')}
           />
 
+          {/* Machine issue: Working / Not Working */}
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 13, marginBottom: 6 }}>Branding</div>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>Working / Not Working</div>
+
+            <label style={{ marginRight: 12 }}>
+              <input
+                type="radio"
+                name="workingStatus"
+                value="OK"
+                checked={formData.workingStatus === 'OK'}
+                onChange={(e) => setFormData((p) => ({ ...p, workingStatus: e.target.value }))}
+              />{' '}
+              Working
+            </label>
+
+            <label>
+              <input
+                type="radio"
+                name="workingStatus"
+                value="Not OK"
+                checked={formData.workingStatus === 'Not OK'}
+                onChange={(e) => setFormData((p) => ({ ...p, workingStatus: e.target.value }))}
+              />{' '}
+              Not Working
+            </label>
+          </div>
+
+          {/* Remarks only for machine Not Working */}
+          {formData.workingStatus === 'Not OK' ? (
+            <InputField
+              label="Remarks"
+              value={formData.remarks}
+              onChange={(v) => setFormData((p) => ({ ...p, remarks: v }))}
+              placeholder=""
+              type="text"
+              error={errors.remarks}
+            />
+          ) : null}
+
+
+          {/* Branding solo issue: separate from machine dropdown */}
+          <div style={{ marginTop: 14, marginBottom: 12 }}>
+            <div style={{ fontSize: 13, marginBottom: 6 }}>Branding / OK / Not OK</div>
+
             <label style={{ marginRight: 12 }}>
               <input
                 type="radio"
@@ -83,6 +150,7 @@ export default function MaintenancePage() {
               />{' '}
               OK
             </label>
+
             <label>
               <input
                 type="radio"
@@ -93,16 +161,18 @@ export default function MaintenancePage() {
               />{' '}
               Not OK
             </label>
+            
+            {formData.branding === 'Not OK' ? (
+            <InputField
+              label="Branding Remarks"
+              value={formData.brandingRemarks}
+              onChange={(v) => setFormData((p) => ({ ...p, brandingRemarks: v }))}
+              placeholder=""
+              type="text"
+              error={errors.brandingRemarks}
+            />
+            ) : null}
           </div>
-
-          <InputField
-            label="Branding Remarks"
-            value={formData.brandingRemarks}
-            onChange={(v) => setFormData((p) => ({ ...p, brandingRemarks: v }))}
-            placeholder=""
-            type="text"
-            error={errors.brandingRemarks}
-          />
 
           <div style={{ marginTop: 6 }}>
             <Button disabled={!attendanceDone || isLoading} type="submit">

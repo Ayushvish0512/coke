@@ -1,0 +1,13 @@
+{
+  "machineTypes": [
+    { "value": "fountain machine", "label": "Fountain Machine" },
+    { "value": "POS Machine", "label": "POS Machine" }
+  ],
+  "fields": {
+    "machineType": { "label": "Machine", "type": "select", "required": true },
+    "brandingStatus": { "label": "Branding", "type": "radio", "required": false },
+    "brandingRemarks": { "label": "Branding Remarks", "type": "text", "required": false },
+    "remarks": { "label": "Remarks", "type": "text", "required": false }
+  }
+}
+

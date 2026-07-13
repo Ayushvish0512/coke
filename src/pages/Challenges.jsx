@@ -9,10 +9,11 @@ import { sendWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import challengesFields from '../config/challengesFields.json';
 
-const YES_NO_OPTIONS = [
+const CHALLENGE_TYPE_OPTIONS = [
   { value: '', label: '-- Select --' },
-  { value: 'Yes', label: 'Yes' },
-  { value: 'No', label: 'No' },
+  { value: 'less cround', label: 'Less Cround' },
+  { value: 'missing raw material', label: 'Missing raw material' },
+  { value: 'other', label: 'Other' },
 ];
 
 export default function ChallengesPage() {
@@ -23,8 +24,7 @@ export default function ChallengesPage() {
 
   const [formData, setFormData] = useState({
     challengeType: '',
-    lessCround: '',
-    rawMaterialUnavailable: '',
+    other: '',
     remarks: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -52,9 +52,11 @@ export default function ChallengesPage() {
         operation: 'Challenges',
         formData: {
           challengeType: formData.challengeType,
-          lessCround: formData.lessCround || undefined,
-          rawMaterialUnavailable: formData.rawMaterialUnavailable || undefined,
+          other: formData.challengeType === 'other' ? (formData.other || '') : undefined,
           remarks: formData.remarks || '',
+          // keep old keys for backend compatibility
+          lessCround: formData.challengeType === 'less cround' ? true : undefined,
+          rawMaterialUnavailable: formData.challengeType === 'missing raw material' ? true : undefined,
         },
       });
 
@@ -68,31 +70,26 @@ export default function ChallengesPage() {
 
   return (
     <div>
-      <Header title="Challenges" />
+      <Header title="Challenges" onBack={() => window.location.assign('/operation')} />
       <FormContainer>
         <form onSubmit={onSubmit}>
-          <InputField
+          <SelectField
             label={challengesFields.challengeType.label}
             value={formData.challengeType}
             onChange={(v) => setFormData((p) => ({ ...p, challengeType: v }))}
-            placeholder=""
-            type="text"
-            error={errors.challengeType}
+            options={CHALLENGE_TYPE_OPTIONS}
           />
 
-          <SelectField
-            label={challengesFields.lessCround.label}
-            value={formData.lessCround}
-            onChange={(v) => setFormData((p) => ({ ...p, lessCround: v }))}
-            options={YES_NO_OPTIONS}
-          />
-
-          <SelectField
-            label={challengesFields.rawMaterialUnavailable.label}
-            value={formData.rawMaterialUnavailable}
-            onChange={(v) => setFormData((p) => ({ ...p, rawMaterialUnavailable: v }))}
-            options={YES_NO_OPTIONS}
-          />
+          {formData.challengeType === 'other' ? (
+            <InputField
+              label={challengesFields.other.label}
+              value={formData.other}
+              onChange={(v) => setFormData((p) => ({ ...p, other: v }))}
+              placeholder=""
+              type="text"
+              error={errors.other}
+            />
+          ) : null}
 
           <InputField
             label={challengesFields.remarks.label}
@@ -113,4 +110,5 @@ export default function ChallengesPage() {
     </div>
   );
 }
+
 

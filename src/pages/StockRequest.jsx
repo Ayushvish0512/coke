@@ -63,7 +63,7 @@ export default function StockRequestPage() {
 
   return (
     <div>
-      <Header title="Stock Request" />
+      <Header title="Stock Request" onBack={() => window.location.assign('/operation')} />
       <FormContainer>
         <div style={{ marginBottom: 12, color: '#555' }}>
           <div>

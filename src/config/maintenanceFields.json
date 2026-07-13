@@ -1,6 +1,9 @@
 {
-  "machineType": { "label": "Machine Type", "type": "text", "required": true },
-  "branding": { "label": "Branding", "type": "radio", "required": false },
-  "brandingRemarks": { "label": "Branding Remarks", "type": "text", "required": false }
+  "machineType": { "label": "Machine Type", "type": "select", "required": true },
+  "brandingRemarks": { "label": "Branding Remarks", "type": "text", "required": false },
+  "remarks": { "label": "Remarks", "type": "text", "required": false },
+  "brandingOk": { "label": "Branding OK", "type": "radio", "required": false },
+  "brandingNotOk": { "label": "Branding Not OK", "type": "radio", "required": false }
 }
+
 
