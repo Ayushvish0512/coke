@@ -1,0 +1,7 @@
+{
+  "challengeType": { "label": "Challenge", "type": "text", "required": true },
+  "lessCround": { "label": "Less Cround", "type": "select", "required": false },
+  "rawMaterialUnavailable": { "label": "Raw Material Unavailable", "type": "select", "required": false },
+  "remarks": { "label": "Remarks", "type": "text", "required": false }
+}
+

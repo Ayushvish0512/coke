@@ -1,0 +1,8 @@
+{
+  "cups": { "label": "Cups", "type": "number", "required": false },
+  "co2": { "label": "CO2", "type": "number", "required": false },
+  "bibSyrup": { "label": "BIB Syrup", "type": "number", "required": false },
+  "waterGallons": { "label": "Water (Gallons)", "type": "number", "required": false },
+  "remarks": { "label": "Remarks", "type": "text", "required": false }
+}
+

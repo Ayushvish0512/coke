@@ -44,8 +44,28 @@ export default function OperationPage() {
           >
             Closing
           </Button>
+          <Button
+            disabled={!attendanceDone}
+            onClick={() => (window.location.assign('/stock-request'))}
+          >
+            Stock Request
+          </Button>
+          <Button
+            disabled={!attendanceDone}
+            onClick={() => (window.location.assign('/maintenance'))}
+          >
+            Maintainase
+          </Button>
+          <Button
+            disabled={!attendanceDone}
+            onClick={() => (window.location.assign('/challenges'))}
+          >
+            Challenges
+          </Button>
         </div>
+
       </FormContainer>
+
     </div>
   );
 }
