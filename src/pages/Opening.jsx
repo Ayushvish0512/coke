@@ -39,6 +39,8 @@ export default function OpeningPage() {
 
     setIsLoading(true);
     try {
+      const loginDateTime = new Date().toISOString();
+
       await sendWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -47,6 +49,7 @@ export default function OpeningPage() {
           openingStock: Number(formData.openingStock),
           openingCash: Number(formData.openingCash),
           remarks: formData.remarks || '',
+          loginDateTime,
         },
       });
 
@@ -60,7 +63,7 @@ export default function OpeningPage() {
 
   return (
     <div>
-      <Header title="Opening Entry" />
+      <Header title="Opening Entry" onBack={() => window.location.assign('/operation')} />
       <FormContainer>
         <div style={{ marginBottom: 12, color: '#555' }}>
           <div>

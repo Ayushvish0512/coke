@@ -64,6 +64,8 @@ export default function ClosingPage() {
     try {
       const closingImageBase64 = await toBase64(stallImageFile);
 
+      const loginDateTime = new Date().toISOString();
+
       await sendWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -73,7 +75,11 @@ export default function ClosingPage() {
           closingCash: Number(formData.closingCash),
           damagedQty: formData.damagedQty === '' ? undefined : Number(formData.damagedQty),
           remarks: formData.remarks || '',
-          closingImage: { key: 'selfieWithStall', value: String(closingImageBase64).split(',')[1] || closingImageBase64 },
+          loginDateTime,
+          closingImage: {
+            key: 'selfieWithStall',
+            value: String(closingImageBase64).split(',')[1] || closingImageBase64,
+          },
         },
       });
 
@@ -88,7 +94,7 @@ export default function ClosingPage() {
 
   return (
     <div>
-      <Header title="Closing Entry" />
+      <Header title="Closing Entry" onBack={() => window.location.assign('/operation')} />
       <FormContainer>
         <div style={{ marginBottom: 12, color: '#555' }}>
           <div>

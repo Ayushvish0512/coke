@@ -57,6 +57,8 @@ export default function MaintenancePage() {
 
     setIsLoading(true);
     try {
+      const loginDateTime = new Date().toISOString();
+
       await sendWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -70,6 +72,7 @@ export default function MaintenancePage() {
               : formData.workingStatus,
           brandingRemarks: formData.machineType === 'Branding' ? (formData.brandingRemarks || '') : '',
           remarks: formData.workingStatus === 'Not OK' ? (formData.remarks || '') : '',
+          loginDateTime,
         },
       });
 

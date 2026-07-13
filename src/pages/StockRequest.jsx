@@ -40,6 +40,8 @@ export default function StockRequestPage() {
 
     setIsLoading(true);
     try {
+      const loginDateTime = new Date().toISOString();
+
       await sendWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -50,6 +52,7 @@ export default function StockRequestPage() {
           bibSyrup: formData.bibSyrup === '' ? undefined : Number(formData.bibSyrup),
           waterGallons: formData.waterGallons === '' ? undefined : Number(formData.waterGallons),
           remarks: formData.remarks || '',
+          loginDateTime,
         },
       });
 

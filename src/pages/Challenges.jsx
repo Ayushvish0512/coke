@@ -46,6 +46,8 @@ export default function ChallengesPage() {
 
     setIsLoading(true);
     try {
+      const loginDateTime = new Date().toISOString();
+
       await sendWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -57,6 +59,7 @@ export default function ChallengesPage() {
           // keep old keys for backend compatibility
           lessCround: formData.challengeType === 'less cround' ? true : undefined,
           rawMaterialUnavailable: formData.challengeType === 'missing raw material' ? true : undefined,
+          loginDateTime,
         },
       });
 
