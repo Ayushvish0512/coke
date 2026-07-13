@@ -109,7 +109,7 @@ export default function AttendancePage() {
 
   return (
     <div>
-      <Header title="Attendance" />
+      <Header title="Attendance" onBack={() => window.location.assign('/operation')} />
       <FormContainer>
         {already ? (
           <div style={{ marginBottom: 12, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: 10, borderRadius: 6 }}>
