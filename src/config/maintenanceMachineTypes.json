@@ -1,8 +1,0 @@
-{
-  "machineTypes": [
-    { "value": "fountain machine", "label": "Fountain Machine" },
-    { "value": "POS Machine", "label": "POS Machine" },
-    { "value": "Branding", "label": "Branding" }
-  ]
-}
-

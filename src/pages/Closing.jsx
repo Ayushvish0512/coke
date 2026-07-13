@@ -31,6 +31,10 @@ export default function ClosingPage() {
 
   const { employee, location } = ctx;
 
+  // closing image upload (backend will upload to imgbb)
+  const [stallImageFile, setStallImageFile] = useState(null);
+  const [stallImageError, setStallImageError] = useState('');
+
   async function onSubmit(e) {
     e.preventDefault();
 
@@ -38,8 +42,28 @@ export default function ClosingPage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
+    const stallValidation = (() => {
+      if (!stallImageFile) return { ok: false, error: 'Stall image is required' };
+      if (stallImageFile.size > 10 * 1024 * 1024) return { ok: false, error: 'Stall image must be less than 10 MB' };
+      if (!stallImageFile.type?.startsWith('image/')) return { ok: false, error: 'Stall must be an image' };
+      return { ok: true };
+    })();
+
+    setStallImageError(stallValidation.ok ? '' : stallValidation.error);
+    if (!stallValidation.ok) return;
+
+    const toBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (err) => reject(err);
+        reader.readAsDataURL(file);
+      });
+
     setIsLoading(true);
     try {
+      const closingImageBase64 = await toBase64(stallImageFile);
+
       await sendWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -49,6 +73,7 @@ export default function ClosingPage() {
           closingCash: Number(formData.closingCash),
           damagedQty: formData.damagedQty === '' ? undefined : Number(formData.damagedQty),
           remarks: formData.remarks || '',
+          closingImage: { key: 'closingImage', value: String(closingImageBase64).split(',')[1] || closingImageBase64 },
         },
       });
 
@@ -59,6 +84,7 @@ export default function ClosingPage() {
       setIsLoading(false);
     }
   }
+
 
   return (
     <div>
