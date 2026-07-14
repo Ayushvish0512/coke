@@ -7,6 +7,7 @@ import Button from '../components/Button.jsx';
 import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
 import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
+import { getIndiaDateTimeString } from '../utils/dateTime.js';
 import maintenanceMerged from '../config/maintenanceMerged.json';
 import SelectField from '../components/SelectField.jsx';
 
@@ -57,8 +58,7 @@ export default function MaintenancePage() {
 
     setIsLoading(true);
     try {
-      // login date time auto captured (India time, UTC+05:30)
-      const loginDateTime = new Date().toISOString().replace(/Z$/, '+05:30');
+      const loginDateTime = getIndiaDateTimeString();
 
 await sendOperationWebhookPayload({
         location: location?.name,

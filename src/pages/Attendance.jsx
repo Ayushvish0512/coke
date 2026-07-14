@@ -7,6 +7,7 @@ import SelectField from '../components/SelectField.jsx';
 import { getUserContext, isAttendanceCompleted, setAttendanceCompleted } from '../utils/storage.js';
 import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
+import { getIndiaDateTimeString } from '../utils/dateTime.js';
 
 const STATUS_OPTIONS = [
   { value: 'Present', label: 'Present' },
@@ -81,8 +82,7 @@ export default function AttendancePage() {
         toBase64(stallImageFile),
       ]);
 
-      // login date time auto captured (India time, UTC+05:30)
-      const loginDateTime = new Date().toISOString().replace(/Z$/, '+05:30');
+      const loginDateTime = getIndiaDateTimeString();
 
 
       await sendOperationWebhookPayload({

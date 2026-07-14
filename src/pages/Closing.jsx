@@ -7,6 +7,7 @@ import AttendanceLock from '../components/AttendanceLock.jsx';
 import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
 import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
+import { getIndiaDateTimeString } from '../utils/dateTime.js';
 import closingFields from '../config/closingFields.json';
 
 export default function ClosingPage() {
@@ -64,8 +65,7 @@ export default function ClosingPage() {
     try {
       const closingImageBase64 = await toBase64(stallImageFile);
 
-      // login date time auto captured (India time, UTC+05:30)
-      const loginDateTime = new Date().toISOString().replace(/Z$/, '+05:30');
+      const loginDateTime = getIndiaDateTimeString();
 
 await sendOperationWebhookPayload({
         location: location?.name,
