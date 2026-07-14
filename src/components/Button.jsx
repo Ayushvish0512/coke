@@ -11,7 +11,9 @@ export default function Button({ children, onClick, disabled, type = 'button', s
         borderRadius: 6,
         border: '1px solid #ddd',
         background: disabled ? '#f5f5f5' : '#fff',
+        color: '#111827',
         cursor: disabled ? 'not-allowed' : 'pointer',
+        WebkitTextFillColor: '#111827',
         ...style,
       }}
     >

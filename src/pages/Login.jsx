@@ -68,7 +68,7 @@ const data = await sendLoginWebhookPayload({
 
   return (
     <div>
-      <Header title="SOFTY ERP" />
+      <Header title="ERP" />
       <FormContainer>
         <div style={{ fontSize: 12, marginBottom: 10, color: '#555' }}>Login</div>
 
