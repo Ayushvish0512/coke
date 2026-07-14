@@ -5,7 +5,7 @@ import FormContainer from '../components/FormContainer.jsx';
 import InputField from '../components/InputField.jsx';
 import SelectField from '../components/SelectField.jsx';
 import { getUserContext, isAttendanceCompleted, setAttendanceCompleted } from '../utils/storage.js';
-import { sendWebhookPayload } from '../services/webhook.js';
+import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 
 const STATUS_OPTIONS = [
@@ -84,7 +84,7 @@ export default function AttendancePage() {
       // login date time auto captured
       const loginDateTime = new Date().toISOString();
 
-      await sendWebhookPayload({
+      await sendOperationWebhookPayload({
         location: location?.name,
         employee: employee?.name,
         operation: 'Attendance',

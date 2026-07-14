@@ -5,7 +5,7 @@ import InputField from '../components/InputField.jsx';
 import Button from '../components/Button.jsx';
 import AttendanceLock from '../components/AttendanceLock.jsx';
 import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
-import { sendWebhookPayload } from '../services/webhook.js';
+import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import closingFields from '../config/closingFields.json';
 
@@ -66,7 +66,7 @@ export default function ClosingPage() {
 
       const loginDateTime = new Date().toISOString();
 
-      await sendWebhookPayload({
+await sendOperationWebhookPayload({
         location: location?.name,
         employee: employee?.name,
         operation: 'Closing',

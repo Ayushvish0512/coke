@@ -1,19 +1,34 @@
 [
   {
     "id": 1,
-    "name": "Sector 29",
+    "name": "SMT Shalimar Mall",
     "employees": [
       { "id": 1, "name": "Ayush" }
     ]
   },
   {
     "id": 2,
-    "name": "Cyber Hub",
+    "name": "SBZ Phoenix Palasio",
     "employees": [
       { "id": 2, "name": "Aman" }
     ]
+  }, {
+    "id": 3,
+    "name": "SBZ Phoenix Market",
+    "employees": [{ "id": 3, "name": "Aman2" }]
+  },
+  {
+    "id": 4,
+    "name": "SBZ Sanjay Place",
+    "employees": [{ "id": 4, "name": "Aman3" }]
+  },
+  {
+    "id": 5,
+    "name": "SBZ Umrao Mall",
+    "employees": [{ "id": 5, "name": "Aman4" }]
   }
 ]
+
 
 
 

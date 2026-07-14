@@ -4,7 +4,7 @@ import FormContainer from '../components/FormContainer.jsx';
 import InputField from '../components/InputField.jsx';
 import Button from '../components/Button.jsx';
 import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
-import { sendWebhookPayload } from '../services/webhook.js';
+import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import stockRequestFields from '../config/stockRequestFields.json';
 
@@ -42,7 +42,7 @@ export default function StockRequestPage() {
     try {
       const loginDateTime = new Date().toISOString();
 
-      await sendWebhookPayload({
+await sendOperationWebhookPayload({
         location: location?.name,
         employee: employee?.name,
         operation: 'StockRequest',

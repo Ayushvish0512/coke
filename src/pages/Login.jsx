@@ -3,30 +3,22 @@ import Header from '../components/Header.jsx';
 import Button from '../components/Button.jsx';
 import SelectField from '../components/SelectField.jsx';
 import FormContainer from '../components/FormContainer.jsx';
-import { getUserContext, setUserContext } from '../utils/storage.js';
+import { setFifteenHourSession, setUserContext } from '../utils/storage.js';
 import locations from '../config/locations.json';
+import { sendLoginWebhookPayload } from '../services/webhook.js';
 
 export default function LoginPage() {
-  const existing = getUserContext();
-
-  const [locationId, setLocationId] = useState(
-    existing?.location?.id
-      ? String(existing.location.id)
-      : String(locations[0]?.id ?? ''),
-  );
-
-  const [employeeId, setEmployeeId] = useState(
-    existing?.employee?.id
-      ? String(existing.employee.id)
-      : '',
-  );
+  const [locationId, setLocationId] = useState(String(locations[0]?.id ?? ''));
+  const [employeeId, setEmployeeId] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const location = useMemo(
     () => locations.find((l) => String(l.id) === String(locationId)) || locations[0],
     [locationId],
   );
 
-  // “Employees” are now expected to come from the selected location data.
   const employees = useMemo(() => {
     return location?.employees || location?.employeeList || location?.users || [];
   }, [location]);
@@ -36,6 +28,43 @@ export default function LoginPage() {
     [employees, employeeId],
   );
 
+  async function onLogin() {
+    setError('');
+    if (!location || !employee) return;
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+const data = await sendLoginWebhookPayload({
+        location: location?.name,
+        password,
+      });
+
+      if (!data?.success) {
+        setError(String(data?.message || 'Invalid location or password'));
+        return;
+      }
+
+      setUserContext({
+        employee: { id: employee.id, name: employee.name },
+        location: { id: location.id, name: data?.location || location.name },
+      });
+
+      setFifteenHourSession({
+        authenticated: true,
+        location: data?.location || location.name,
+      });
+
+      window.location.assign('/operation');
+    } catch (e) {
+      setError(String(e?.message || e));
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div>
@@ -46,7 +75,10 @@ export default function LoginPage() {
         <SelectField
           label="Location"
           value={String(location?.id)}
-          onChange={setLocationId}
+          onChange={(v) => {
+            setLocationId(v);
+            setEmployeeId('');
+          }}
           options={locations.map((l) => ({ value: String(l.id), label: l.name }))}
         />
 
@@ -57,22 +89,33 @@ export default function LoginPage() {
           options={employees.map((e) => ({ value: String(e.id), label: e.name }))}
         />
 
+        <div style={{ marginTop: 12 }}>
+          <label style={{ fontSize: 12, color: '#555', display: 'block', marginBottom: 6 }}>
+            Password
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ddd' }}
+          />
+        </div>
+
+        {error ? (
+          <div style={{ marginTop: 12, color: '#dc2626', fontSize: 12 }}>{error}</div>
+        ) : null}
+
         <div style={{ marginTop: 14 }}>
           <Button
-            disabled={!location || !employee}
-            onClick={() => {
-              setUserContext({
-                employee: { id: employee.id, name: employee.name },
-                location: { id: location.id, name: location.name },
-              });
-              window.location.assign('/operation');
-            }}
+            disabled={!location || !employee || isLoading}
+            onClick={onLogin}
           >
-            Login
+            {isLoading ? 'Logging in...' : 'Login'}
           </Button>
         </div>
       </FormContainer>
     </div>
   );
 }
+
 

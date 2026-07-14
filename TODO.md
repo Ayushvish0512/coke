@@ -1,11 +1,8 @@
-## Maintenance page - machine issue + remarks (TODO)
+# TODO - Auto logout (15 hours)
 
-- [x] Inspect current `src/pages/Maintenance.jsx`
-- [x] Inspect maintenance configs: `maintenanceMerged.json`, `maintenanceFields.json`, `maintenanceMachineTypes.json`
-- [ ] Update `src/pages/Maintenance.jsx` to use dropdown for **Machine with issue** (single selection)
-- [ ] Rename UI: “Branding” section -> “Working / Not Working” (for selected machine)
-- [ ] Show “Remarks” only when selected machine is **Not Working**
-- [ ] If selected machine is **Branding**, show “Branding Remarks” + “Remarks”; otherwise hide “Branding Remarks”
-- [ ] Adjust webhook payload accordingly (send appropriate fields, avoid misleading branding fields)
-- [ ] Run app (npm run dev / build) to ensure no errors
+- [ ] Implement session expiry helpers in `src/utils/storage.js` and `src/utils/constants.js`.
+- [ ] Update `src/pages/Login.jsx` to set `sessionExpiresAt = Date.now() + 15h` on successful login.
+- [ ] Add route/session guard to all protected pages (start with `src/pages/Operation.jsx`).
+- [ ] Add failsafe auto-logout timer while app is open (optional).
+- [ ] Verify by running dev server and checking redirect/clearing after expiry.
 

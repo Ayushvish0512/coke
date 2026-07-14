@@ -1,7 +1,7 @@
 import appConfig from '../config/appConfig.js';
 
-export async function sendWebhookPayload(payload) {
-  const res = await fetch(appConfig.webhookUrl, {
+async function postWebhook(url, payload) {
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -26,4 +26,13 @@ export async function sendWebhookPayload(payload) {
     return { ok: true };
   }
 }
+
+export async function sendLoginWebhookPayload(payload) {
+  return postWebhook(appConfig.loginWebhookUrl, payload);
+}
+
+export async function sendOperationWebhookPayload(payload) {
+  return postWebhook(appConfig.operationWebhookUrl, payload);
+}
+
 

@@ -3,20 +3,21 @@ import Header from '../components/Header.jsx';
 import Button from '../components/Button.jsx';
 import FormContainer from '../components/FormContainer.jsx';
 import AttendanceLock from '../components/AttendanceLock.jsx';
-import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
+import { clearSession, getUserContext, isAttendanceCompleted, isSessionValid } from '../utils/storage.js';
 
 export default function OperationPage() {
-  const ctx = getUserContext();
   const attendanceDone = isAttendanceCompleted();
+  const ctx = getUserContext();
 
-  if (!ctx) {
+  if (!ctx || !isSessionValid()) {
+    clearSession();
     window.location.assign('/login');
     return null;
   }
 
   const { employee, location } = ctx;
-    const greeting = 'Good Morning';
-    
+  const greeting = 'Good Morning';
+
   return (
     <div>
       <Header title={"Operation" ,greeting + ' ' + (employee?.name || '')}/>
@@ -70,4 +71,6 @@ export default function OperationPage() {
     </div>
   );
 }
+
+
 

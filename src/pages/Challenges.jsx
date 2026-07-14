@@ -5,7 +5,7 @@ import InputField from '../components/InputField.jsx';
 import Button from '../components/Button.jsx';
 import SelectField from '../components/SelectField.jsx';
 import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
-import { sendWebhookPayload } from '../services/webhook.js';
+import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import challengesFields from '../config/challengesFields.json';
 
@@ -48,7 +48,7 @@ export default function ChallengesPage() {
     try {
       const loginDateTime = new Date().toISOString();
 
-      await sendWebhookPayload({
+await sendOperationWebhookPayload({
         location: location?.name,
         employee: employee?.name,
         operation: 'Challenges',
