@@ -1,0 +1,11 @@
+{
+  "challengeType": {
+    "options": [
+      { "value": "", "label": "-- Select --" },
+      { "value": "less cround", "label": "Less Crowd" },
+      { "value": "missing raw material", "label": "Insufficient raw material" },
+      { "value": "other", "label": "Other" }
+    ]
+  }
+}
+

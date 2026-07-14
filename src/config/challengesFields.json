@@ -1,7 +1,7 @@
 {
   "challengeType": { "label": "Challenge", "type": "select", "required": true },
-  "lessCround": { "label": "Less Cround", "type": "select", "required": false },
-  "rawMaterialUnavailable": { "label": "Missing raw material", "type": "select", "required": false },
+  "lessCround": { "label": "Less Crowd", "type": "select", "required": false },
+  "rawMaterialUnavailable": { "label": "Insufficient raw material", "type": "select", "required": false },
   "other": { "label": "Other", "type": "text", "required": false },
   "remarks": { "label": "Remarks", "type": "text", "required": true }
 }

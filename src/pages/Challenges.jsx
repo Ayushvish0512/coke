@@ -8,13 +8,7 @@ import { getUserContext, isAttendanceCompleted } from '../utils/storage.js';
 import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import challengesFields from '../config/challengesFields.json';
-
-const CHALLENGE_TYPE_OPTIONS = [
-  { value: '', label: '-- Select --' },
-  { value: 'less cround', label: 'Less Cround' },
-  { value: 'missing raw material', label: 'Missing raw material' },
-  { value: 'other', label: 'Other' },
-];
+import challengesOptions from '../config/challengesOptions.json';
 
 export default function ChallengesPage() {
   const ctx = getUserContext();
@@ -80,7 +74,8 @@ await sendOperationWebhookPayload({
             label={challengesFields.challengeType.label}
             value={formData.challengeType}
             onChange={(v) => setFormData((p) => ({ ...p, challengeType: v }))}
-            options={CHALLENGE_TYPE_OPTIONS}
+            options={challengesOptions?.challengeType?.options || []}
+
           />
 
           {formData.challengeType === 'other' ? (

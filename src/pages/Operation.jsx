@@ -56,7 +56,7 @@ export default function OperationPage() {
             disabled={!attendanceDone}
             onClick={() => (window.location.assign('/maintenance'))}
           >
-            Maintainase
+            Maintenance
           </Button>
           <Button
             disabled={!attendanceDone}
