@@ -64,7 +64,8 @@ export default function ClosingPage() {
     try {
       const closingImageBase64 = await toBase64(stallImageFile);
 
-      const loginDateTime = new Date().toISOString();
+      // login date time auto captured (India time, UTC+05:30)
+      const loginDateTime = new Date().toISOString().replace(/Z$/, '+05:30');
 
 await sendOperationWebhookPayload({
         location: location?.name,
