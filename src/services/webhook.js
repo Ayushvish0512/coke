@@ -1,4 +1,5 @@
 import appConfig from '../config/appConfig.js';
+import { getClientIpAddress } from '../utils/ipAddress.js';
 
 async function postWebhook(url, payload) {
   const res = await fetch(url, {
@@ -6,8 +7,9 @@ async function postWebhook(url, payload) {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ip: getClientIpAddress(), ...payload }),
   });
+
 
   if (!res.ok) {
     let text = '';
