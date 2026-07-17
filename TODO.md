@@ -1,8 +1,8 @@
-# TODO - Auto logout (15 hours)
+## MCP Server Setup - blackboxai
 
-- [ ] Implement session expiry helpers in `src/utils/storage.js` and `src/utils/constants.js`.
-- [ ] Update `src/pages/Login.jsx` to set `sessionExpiresAt = Date.now() + 15h` on successful login.
-- [ ] Add route/session guard to all protected pages (start with `src/pages/Operation.jsx`).
-- [ ] Add failsafe auto-logout timer while app is open (optional).
-- [ ] Verify by running dev server and checking redirect/clearing after expiry.
+- [ ] Verify/backup current `blackbox_mcp_settings.json`
+- [ ] Add Supabase MCP server config to `blackbox_mcp_settings.json` with server name `github.com/supabase-community/supabase-mcp`
+- [ ] Restart/refresh Blackbox agent (if required) so the new MCP server is loaded
+- [ ] Demonstrate MCP server capabilities by invoking one available tool (e.g., `search_docs` or `list_tables`) via MCP client/Blackbox tooling
+- [ ] Record the demonstration output in this repo (optional)
 

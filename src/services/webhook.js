@@ -1,15 +1,20 @@
 import appConfig from '../config/appConfig.js';
-import { getClientIpAddress } from '../utils/ipAddress.js';
+import { ensureClientIpAddress, getClientIpAddress } from '../utils/ipAddress.js';
 
 async function postWebhook(url, payload) {
+  // Prefer cached IP (fast). Only if missing, lazily fetch.
+  let ip = getClientIpAddress();
+  if (!ip) {
+    ip = await ensureClientIpAddress();
+  }
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ ip: getClientIpAddress(), ...payload }),
+    body: JSON.stringify({ ip, ...payload }),
   });
-
 
   if (!res.ok) {
     let text = '';
@@ -36,5 +41,6 @@ export async function sendLoginWebhookPayload(payload) {
 export async function sendOperationWebhookPayload(payload) {
   return postWebhook(appConfig.operationWebhookUrl, payload);
 }
+
 
 
