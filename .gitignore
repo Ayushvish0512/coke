@@ -14,9 +14,9 @@ tscache/
 # Env files
 .env
 .env.*
-!.env.example
-
+.env.example
 # Editor directories and files
+
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
