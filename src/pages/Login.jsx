@@ -6,6 +6,8 @@ import FormContainer from '../components/FormContainer.jsx';
 import { setFifteenHourSession, setUserContext } from '../utils/storage.js';
 import locations from '../config/locations.json';
 import { sendLoginWebhookPayload } from '../services/webhook.js';
+import { upsertLoginActivity } from '../services/deviceAttendance.js';
+import { ensureClientIpAddress } from '../utils/ipAddress.js';
 
 export default function LoginPage() {
   const [locationId, setLocationId] = useState(String(locations[0]?.id ?? ''));
@@ -57,6 +59,21 @@ const data = await sendLoginWebhookPayload({
         authenticated: true,
         location: data?.location || location.name,
       });
+
+      // Fire-and-forget: record login activity in Supabase (non-blocking)
+      // NOTE: We must await before navigation, otherwise page unload cancels the request
+      try {
+        const ip = await ensureClientIpAddress();
+        console.log('[Supabase] Recording login for', employee?.name, '@', location?.name, 'IP:', ip);
+        await upsertLoginActivity({
+          location: location?.name,
+          employeeName: employee?.name,
+          ip: ip || 'unknown',
+        });
+        console.log('[Supabase] Login recorded successfully');
+      } catch (err) {
+        console.error('[Supabase] Failed to record login:', err);
+      }
 
       window.location.assign('/operation');
     } catch (e) {

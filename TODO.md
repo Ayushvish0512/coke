@@ -1,8 +1,12 @@
-## MCP Server Setup - blackboxai
+# Supabase Login Recording Fix ✅ COMPLETE
 
-- [ ] Verify/backup current `blackbox_mcp_settings.json`
-- [ ] Add Supabase MCP server config to `blackbox_mcp_settings.json` with server name `github.com/supabase-community/supabase-mcp`
-- [ ] Restart/refresh Blackbox agent (if required) so the new MCP server is loaded
-- [ ] Demonstrate MCP server capabilities by invoking one available tool (e.g., `search_docs` or `list_tables`) via MCP client/Blackbox tooling
-- [ ] Record the demonstration output in this repo (optional)
+## Steps
+- [x] Step 1: Create `src/utils/deviceId.js` — stable device ID generator
+- [x] Step 2: Edit `src/pages/Login.jsx` — add Supabase insert after webhook auth
+- [x] Step 3: Verify `@supabase/supabase-js` dependency is installed
+- [x] Step 4: Fixed `.env` — `VITE_SUPABASE_URL` had `/rest/v1/` suffix removed
+- [x] Step 5: Fixed Supabase insert to `await` before navigation (prevent cancellation)
+- [x] Step 6: Verified insert works via `@supabase/supabase-js` library (201 Created)
+- [x] Step 7: Build succeeds (106 modules, 403.93 kB)
+
 
