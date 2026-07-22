@@ -32,5 +32,5 @@ tscache/
 coverage/
 *.tgz
 .blackbox/
-
+TODO.md
 .error_supdabase_log.txt

@@ -8,38 +8,65 @@ function toYMD(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
-// ─── In-memory attendance cache ───────────────────────────────────────────────
-// Prevents duplicate Supabase queries across components and navigation.
+// ─── Attendance cache (localStorage-backed) ──────────────────────────────────
+// Uses localStorage so the cache survives full page reloads (window.location.assign).
 // Cache TTL: 5 minutes (matches typical session flows)
 const CACHE_TTL_MS = 5 * 60 * 1000;
-let cachedAttendance = null; // { employeeName: string, completed: boolean, timestamp: number }
+const CACHE_KEY = 'softy.attendanceCache';
 
 /**
- * Set the attendance cache immediately (used after successful submission).
+ * Set the attendance cache in localStorage (used after successful submission).
  * @param {boolean} value - Whether attendance is completed
  * @param {string} employeeName - The employee name this result applies to
  */
 export function setAttendanceCache({ completed, employeeName }) {
-  cachedAttendance = {
+  const truthy = !!completed;
+  const entry = {
     employeeName,
-    completed: !!completed,
+    completed: truthy,
     timestamp: Date.now(),
   };
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+    // Also sync the old localStorage flag used by isAttendanceCompleted() in storage.js
+    // so that pages like Opening, Closing, etc. see the updated status immediately.
+    localStorage.setItem('softy.attendanceCompleted', JSON.stringify(truthy));
+  } catch {
+    // localStorage might be full or unavailable; ignore
+  }
 }
 
 /**
- * Get cached attendance result if valid (same employee + within TTL).
+ * Get cached attendance result if valid (same employee, within TTL, not yet expired).
  * @param {string} employeeName
  * @returns {{ completed: boolean } | null}
  */
 function getValidCache(employeeName) {
-  if (!cachedAttendance) return null;
-  if (cachedAttendance.employeeName !== employeeName) return null;
-  if (Date.now() - cachedAttendance.timestamp > CACHE_TTL_MS) {
-    cachedAttendance = null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const entry = JSON.parse(raw);
+    if (entry.employeeName !== employeeName) return null;
+    if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+      localStorage.removeItem(CACHE_KEY);
+      return null;
+    }
+    return { completed: entry.completed };
+  } catch {
+    localStorage.removeItem(CACHE_KEY);
     return null;
   }
-  return { completed: cachedAttendance.completed };
+}
+
+/**
+ * Clear the attendance cache (e.g., on logout).
+ */
+export function clearAttendanceCache() {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 // This file writes to the following existing Supabase tables:
@@ -113,23 +140,22 @@ export async function isAttendanceCompletedForDevice({ deviceId } = {}) {
  * Check if attendance has been completed for a given employee today (IST).
  * Queries the attendance_completions table by Employee Name + Today's Date.
  *
- * Per PRD v2.0:
- * - Searches for a record matching Employee Name + Today's Date (IST)
- * - Returns only one matching record (LIMIT 1)
- * - The attendance_completions table is the single source of truth
- *
  * @param {Object} params
  * @param {string} params.employeeName - The employee name to check
+ * @param {boolean} [params.bypassCache] - If true, skips cache and fetches from Supabase directly (used by polling)
  * @returns {Promise<boolean>} - True if attendance exists for today
  */
-export async function checkTodayAttendance({ employeeName } = {}) {
+export async function checkTodayAttendance({ employeeName, bypassCache } = {}) {
   if (!employeeName) throw new Error('employeeName is required');
 
-  // Return cached result if available (avoids duplicate Supabase queries)
-  const cached = getValidCache(employeeName);
-  if (cached !== null) {
-    console.log('[AttendanceCache] Hit for', employeeName, '→', cached.completed);
-    return cached.completed;
+  // Return cached result if available — but ONLY for positive (true) results.
+  // Negative results (false) always re-fetch to support polling detecting the newly created record.
+  if (!bypassCache) {
+    const cached = getValidCache(employeeName);
+    if (cached !== null) {
+      console.log('[AttendanceCache] Hit for', employeeName, '→', cached.completed);
+      return cached.completed;
+    }
   }
 
   console.log('[AttendanceCache] Miss for', employeeName, '→ fetching from Supabase');
@@ -148,12 +174,11 @@ export async function checkTodayAttendance({ employeeName } = {}) {
 
   const completed = data && data.length > 0;
 
-  // Store in cache for subsequent calls
-  cachedAttendance = {
-    employeeName,
-    completed,
-    timestamp: Date.now(),
-  };
+  // Only cache positive (true) results. False results should always re-fetch
+  // so that polling and subsequent checks can detect when attendance is completed.
+  if (completed) {
+    setAttendanceCache({ completed: true, employeeName });
+  }
 
   return completed;
 }
