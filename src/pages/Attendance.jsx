@@ -8,6 +8,7 @@ import { getUserContext, isAttendanceCompleted, setAttendanceCompleted } from '.
 import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import { getIndiaDateTimeString } from '../utils/dateTime.js';
+import { getDeviceId } from '../utils/deviceId.js';
 
 const STATUS_OPTIONS = [
   { value: 'Present', label: 'Present' },
@@ -84,6 +85,9 @@ export default function AttendancePage() {
 
       const loginDateTime = getIndiaDateTimeString();
 
+      const selfieImageClean = String(selfieImageBase64).split(',')[1] || selfieImageBase64;
+      const stallImageClean = String(stallImageBase64).split(',')[1] || stallImageBase64;
+      const deviceId = getDeviceId();
 
       await sendOperationWebhookPayload({
         location: location?.name,
@@ -93,8 +97,9 @@ export default function AttendancePage() {
           status,
           remarks,
           loginDateTime,
-          selfieImage: { key: 'selfieImage', value: String(selfieImageBase64).split(',')[1] || selfieImageBase64 },
-          stallImage: { key: 'stallImage', value: String(stallImageBase64).split(',')[1] || stallImageBase64 },
+          selfieImage: { key: 'selfieImage', value: selfieImageClean },
+          stallImage: { key: 'stallImage', value: stallImageClean },
+          device_id: deviceId,
         },
       });
 
@@ -106,7 +111,6 @@ export default function AttendancePage() {
       setIsLoading(false);
     }
   }
-
 
   return (
     <div>
@@ -168,4 +172,3 @@ export default function AttendancePage() {
     </div>
   );
 }
-
