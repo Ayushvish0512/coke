@@ -41,7 +41,7 @@ export async function upsertLoginActivity({ location, employeeName, ip } = {}) {
   return { ok: true };
 }
 
-export async function upsertAttendanceCompletion({ location, deviceId, employeeName } = {}) {
+export async function upsertAttendanceCompletion({ location, deviceId, employeeName, selfieImage, stallImage, ipAddress } = {}) {
   if (!location) throw new Error('location is required');
   if (!deviceId) throw new Error('deviceId is required');
   if (!employeeName) throw new Error('employeeName is required');
@@ -52,6 +52,9 @@ export async function upsertAttendanceCompletion({ location, deviceId, employeeN
     Location: String(location),
     device_id: String(deviceId),
     'Employee name': String(employeeName),
+    'Selfie Image': selfieImage || null,
+    'Stall Image': stallImage || null,
+    'IP Address': ipAddress || null,
   });
 
   if (error) throw error;
@@ -70,6 +73,38 @@ export async function isAttendanceCompletedForDevice({ deviceId } = {}) {
 
   if (error) throw error;
   return !!data;
+}
+
+/**
+ * Check if attendance has been completed for a given employee today (IST).
+ * Queries the attendance_completions table by Employee Name + Today's Date.
+ *
+ * Per PRD v2.0:
+ * - Searches for a record matching Employee Name + Today's Date (IST)
+ * - Returns only one matching record (LIMIT 1)
+ * - The attendance_completions table is the single source of truth
+ *
+ * @param {Object} params
+ * @param {string} params.employeeName - The employee name to check
+ * @returns {Promise<boolean>} - True if attendance exists for today
+ */
+export async function checkTodayAttendance({ employeeName } = {}) {
+  if (!employeeName) throw new Error('employeeName is required');
+
+  const { data, error } = await supabase
+    .from('attendance_completions')
+    .select('id')
+    .eq('Employee name', String(employeeName))
+    .gte('created_at', new Date(new Date().toDateString()).toISOString()) // start of today UTC
+    .lt('created_at', new Date(new Date(Date.now() + 86400000).toDateString()).toISOString()) // start of tomorrow UTC
+    .limit(1);
+
+  if (error) {
+    console.error('[Supabase] checkTodayAttendance error:', error);
+    throw error;
+  }
+
+  return data && data.length > 0;
 }
 
 

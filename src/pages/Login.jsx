@@ -6,7 +6,7 @@ import FormContainer from '../components/FormContainer.jsx';
 import { setFifteenHourSession, setUserContext } from '../utils/storage.js';
 import locations from '../config/locations.json';
 import { sendLoginWebhookPayload } from '../services/webhook.js';
-import { upsertLoginActivity } from '../services/deviceAttendance.js';
+import { upsertLoginActivity, checkTodayAttendance } from '../services/deviceAttendance.js';
 import { ensureClientIpAddress } from '../utils/ipAddress.js';
 
 export default function LoginPage() {
@@ -75,7 +75,20 @@ const data = await sendLoginWebhookPayload({
         console.error('[Supabase] Failed to record login:', err);
       }
 
-      window.location.assign('/operation');
+      // PRD v2.0: Check if attendance is completed for today
+      // If yes → redirect to /operation
+      // If no → redirect to /attendance
+      try {
+        const hasAttendance = await checkTodayAttendance({ employeeName: employee?.name });
+        if (hasAttendance) {
+          window.location.assign('/operation');
+        } else {
+          window.location.assign('/attendance');
+        }
+      } catch (err) {
+        console.error('[Login] Attendance check failed, defaulting to /attendance:', err);
+        window.location.assign('/attendance');
+      }
     } catch (e) {
       setError(String(e?.message || e));
     } finally {

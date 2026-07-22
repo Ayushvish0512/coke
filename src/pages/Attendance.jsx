@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Header from '../components/Header.jsx';
 import Button from '../components/Button.jsx';
 import FormContainer from '../components/FormContainer.jsx';
 import InputField from '../components/InputField.jsx';
 import SelectField from '../components/SelectField.jsx';
-import { getUserContext, isAttendanceCompleted, setAttendanceCompleted } from '../utils/storage.js';
+import { getUserContext, setAttendanceCompleted } from '../utils/storage.js';
+import { getDeviceId } from '../utils/deviceId.js';
 import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import { getIndiaDateTimeString } from '../utils/dateTime.js';
-import { getDeviceId } from '../utils/deviceId.js';
+import { checkTodayAttendance, upsertAttendanceCompletion } from '../services/deviceAttendance.js';
+import { ensureClientIpAddress } from '../utils/ipAddress.js';
 
 const STATUS_OPTIONS = [
   { value: 'Present', label: 'Present' },
@@ -23,7 +25,40 @@ export default function AttendancePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const already = isAttendanceCompleted();
+  // Supabase-backed attendance check (PRD v2.0: Attendance table is single source of truth)
+  const [supabaseCheck, setSupabaseCheck] = useState({ loading: true, completed: false });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkAttendance() {
+      if (!ctx || !ctx.employee) {
+        if (!cancelled) setSupabaseCheck({ loading: false, completed: false });
+        return;
+      }
+
+      try {
+        const hasAttendance = await checkTodayAttendance({ employeeName: ctx.employee.name });
+        if (!cancelled) {
+          setSupabaseCheck({ loading: false, completed: hasAttendance });
+        }
+      } catch (err) {
+        console.error('[Attendance] Supabase check failed, falling back to localStorage:', err);
+        // Fall back to localStorage for resilience
+        const stored = localStorage.getItem('softy.attendanceCompleted');
+        const localCompleted = stored === 'true';
+        if (!cancelled) {
+          setSupabaseCheck({ loading: false, completed: localCompleted });
+        }
+      }
+    }
+
+    checkAttendance();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ctx?.employee?.name]);
 
   if (!ctx) {
     window.location.assign('/login');
@@ -89,6 +124,7 @@ export default function AttendancePage() {
       const stallImageClean = String(stallImageBase64).split(',')[1] || stallImageBase64;
       const deviceId = getDeviceId();
 
+      // Send to webhook (n8n)
       await sendOperationWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -103,7 +139,28 @@ export default function AttendancePage() {
         },
       });
 
+      // PRD v2.0: Save attendance record to Supabase (single source of truth)
+      try {
+        const ip = await ensureClientIpAddress();
+        console.log('[Supabase] Recording attendance for', employee?.name, '@', location?.name);
+        await upsertAttendanceCompletion({
+          location: location?.name,
+          deviceId,
+          employeeName: employee?.name,
+          selfieImage: selfieImageClean,
+          stallImage: stallImageClean,
+          ipAddress: ip || 'unknown',
+        });
+        console.log('[Supabase] Attendance recorded successfully');
+      } catch (err) {
+        console.error('[Supabase] Failed to record attendance:', err);
+        // Non-blocking: webhook already succeeded, proceed
+      }
+
+      // Update localStorage flag for immediate feedback
       setAttendanceCompleted(true);
+
+      // Navigate to operation page; the App route guard will verify via Supabase
       window.location.assign('/operation');
     } catch (err) {
       alert(String(err?.message || err));
@@ -116,57 +173,61 @@ export default function AttendancePage() {
     <div>
       <Header title="Attendance" onBack={() => window.location.assign('/operation')} />
       <FormContainer>
-        {already ? (
+        {supabaseCheck.loading ? (
+          <div style={{ marginBottom: 12, color: '#555', fontSize: 13 }}>Checking attendance status...</div>
+        ) : supabaseCheck.completed ? (
           <div style={{ marginBottom: 12, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: 10, borderRadius: 6 }}>
-            Attendance already completed.
+            Attendance already completed for today.
           </div>
         ) : null}
 
-        <form onSubmit={onSubmit}>
-          <SelectField label="Attendance Status" value={status} onChange={setStatus} options={STATUS_OPTIONS} />
-          <InputField label="Remarks" value={remarks} onChange={setRemarks} placeholder="" type="text" />
+        {!supabaseCheck.loading && supabaseCheck.completed ? null : (
+          <form onSubmit={onSubmit}>
+            <SelectField label="Attendance Status" value={status} onChange={setStatus} options={STATUS_OPTIONS} />
+            <InputField label="Remarks" value={remarks} onChange={setRemarks} placeholder="" type="text" />
 
-          {/* Image uploads (backend uploads to imgbb). Mandatory. */}
-          <div style={{ marginTop: 12, marginBottom: 8 }}>
-            <div style={{ fontSize: 13, marginBottom: 6 }}>Selfie (Branded T-Shirt)</div>
-            <input
-              type="file"
-              accept="image/*"
-              capture="user"
-              onChange={(e) => {
-                const f = e.target.files?.[0] || null;
-                setSelfieImageFile(f);
-                setSelfieImageError('');
-              }}
-            />
-            {selfieImageError ? (
-              <div style={{ marginTop: 4, color: '#dc2626', fontSize: 12 }}>{selfieImageError}</div>
-            ) : null}
-          </div>
+            {/* Image uploads (backend uploads to imgbb). Mandatory. */}
+            <div style={{ marginTop: 12, marginBottom: 8 }}>
+              <div style={{ fontSize: 13, marginBottom: 6 }}>Selfie (Branded T-Shirt)</div>
+              <input
+                type="file"
+                accept="image/*"
+                capture="user"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setSelfieImageFile(f);
+                  setSelfieImageError('');
+                }}
+              />
+              {selfieImageError ? (
+                <div style={{ marginTop: 4, color: '#dc2626', fontSize: 12 }}>{selfieImageError}</div>
+              ) : null}
+            </div>
 
-          <div style={{ marginTop: 12, marginBottom: 8 }}>
-            <div style={{ fontSize: 13, marginBottom: 6 }}>Stall Image (Hygiene + Promoter)</div>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={(e) => {
-                const f = e.target.files?.[0] || null;
-                setStallImageFile(f);
-                setStallImageError('');
-              }}
-            />
-            {stallImageError ? (
-              <div style={{ marginTop: 4, color: '#dc2626', fontSize: 12 }}>{stallImageError}</div>
-            ) : null}
-          </div>
+            <div style={{ marginTop: 12, marginBottom: 8 }}>
+              <div style={{ fontSize: 13, marginBottom: 6 }}>Stall Image (Hygiene + Promoter)</div>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  setStallImageFile(f);
+                  setStallImageError('');
+                }}
+              />
+              {stallImageError ? (
+                <div style={{ marginTop: 4, color: '#dc2626', fontSize: 12 }}>{stallImageError}</div>
+              ) : null}
+            </div>
 
-          <div style={{ marginTop: 8 }}>
-            <Button disabled={isLoading} type="submit">
-              {isLoading ? 'Submitting...' : 'Submit'}
-            </Button>
-          </div>
-        </form>
+            <div style={{ marginTop: 8 }}>
+              <Button disabled={isLoading} type="submit">
+                {isLoading ? 'Submitting...' : 'Submit'}
+              </Button>
+            </div>
+          </form>
+        )}
 
       </FormContainer>
     </div>
