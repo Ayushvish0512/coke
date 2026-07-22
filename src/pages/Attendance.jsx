@@ -9,8 +9,7 @@ import { getDeviceId } from '../utils/deviceId.js';
 import { sendOperationWebhookPayload } from '../services/webhook.js';
 import { validateRequiredFields } from '../services/validation.js';
 import { getIndiaDateTimeString } from '../utils/dateTime.js';
-import { checkTodayAttendance, upsertAttendanceCompletion } from '../services/deviceAttendance.js';
-import { ensureClientIpAddress } from '../utils/ipAddress.js';
+import { checkTodayAttendance } from '../services/deviceAttendance.js';
 
 const STATUS_OPTIONS = [
   { value: 'Present', label: 'Present' },
@@ -124,7 +123,7 @@ export default function AttendancePage() {
       const stallImageClean = String(stallImageBase64).split(',')[1] || stallImageBase64;
       const deviceId = getDeviceId();
 
-      // Send to webhook (n8n)
+      // Send to webhook (n8n) — the webhook backend saves attendance to Supabase
       await sendOperationWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -139,25 +138,7 @@ export default function AttendancePage() {
         },
       });
 
-      // PRD v2.0: Save attendance record to Supabase (single source of truth)
-      try {
-        const ip = await ensureClientIpAddress();
-        console.log('[Supabase] Recording attendance for', employee?.name, '@', location?.name);
-        await upsertAttendanceCompletion({
-          location: location?.name,
-          deviceId,
-          employeeName: employee?.name,
-          selfieImage: selfieImageClean,
-          stallImage: stallImageClean,
-          ipAddress: ip || 'unknown',
-        });
-        console.log('[Supabase] Attendance recorded successfully');
-      } catch (err) {
-        console.error('[Supabase] Failed to record attendance:', err);
-        // Non-blocking: webhook already succeeded, proceed
-      }
-
-      // Update localStorage flag for immediate feedback
+      // Webhook succeeded — update localStorage flag for immediate feedback
       setAttendanceCompleted(true);
 
       // Navigate to operation page; the App route guard will verify via Supabase
