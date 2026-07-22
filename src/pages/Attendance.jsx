@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Header from '../components/Header.jsx';
 import Button from '../components/Button.jsx';
 import FormContainer from '../components/FormContainer.jsx';
@@ -17,6 +17,46 @@ const STATUS_OPTIONS = [
   { value: 'Half Day', label: 'Half Day' },
 ];
 
+const POLL_INITIAL_DELAY_MS = 3000;
+const POLL_INTERVAL_MS = 2000;
+const POLL_MAX_RETRIES = 3;
+
+function pollAttendance({ employeeName, onFound, onFailed }) {
+  let retries = 0;
+  let cancelled = false;
+
+  async function tryFetch() {
+    if (cancelled) return;
+
+    try {
+      const hasAttendance = await checkTodayAttendance({ employeeName });
+      if (cancelled) return;
+      if (hasAttendance) {
+        onFound();
+        return;
+      }
+    } catch (err) {
+      console.warn('[Attendance] Poll attempt failed:', err);
+      if (cancelled) return;
+    }
+
+    retries++;
+    if (retries >= POLL_MAX_RETRIES) {
+      onFailed();
+      return;
+    }
+
+    setTimeout(tryFetch, POLL_INTERVAL_MS);
+  }
+
+  const initialTimer = setTimeout(tryFetch, POLL_INITIAL_DELAY_MS);
+
+  return () => {
+    cancelled = true;
+    clearTimeout(initialTimer);
+  };
+}
+
 export default function AttendancePage() {
   const ctx = getUserContext();
   const [status, setStatus] = useState('Present');
@@ -24,8 +64,21 @@ export default function AttendancePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Supabase-backed attendance check (PRD v2.0: Attendance table is single source of truth)
   const [supabaseCheck, setSupabaseCheck] = useState({ loading: true, completed: false });
+
+  const [processingState, setProcessingState] = useState({
+    active: false,
+    failed: false,
+  });
+
+  const pollCancelRef = useRef(null);
+
+  const cancelPoll = useCallback(() => {
+    if (pollCancelRef.current) {
+      pollCancelRef.current();
+      pollCancelRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +96,6 @@ export default function AttendancePage() {
         }
       } catch (err) {
         console.error('[Attendance] Supabase check failed, falling back to localStorage:', err);
-        // Fall back to localStorage for resilience
         const stored = localStorage.getItem('softy.attendanceCompleted');
         const localCompleted = stored === 'true';
         if (!cancelled) {
@@ -56,8 +108,13 @@ export default function AttendancePage() {
 
     return () => {
       cancelled = true;
+      cancelPoll();
     };
-  }, [ctx?.employee?.name]);
+  }, [ctx?.employee?.name, cancelPoll]);
+
+  useEffect(() => {
+    return () => cancelPoll();
+  }, [cancelPoll]);
 
   if (!ctx) {
     window.location.assign('/login');
@@ -66,11 +123,27 @@ export default function AttendancePage() {
 
   const { employee, location } = ctx;
 
-  // base64 image fields (backend will upload to imgbb)
   const [selfieImageFile, setSelfieImageFile] = useState(null);
   const [stallImageFile, setStallImageFile] = useState(null);
   const [selfieImageError, setSelfieImageError] = useState('');
   const [stallImageError, setStallImageError] = useState('');
+
+  const handleRetryPoll = useCallback(() => {
+    setProcessingState({ active: true, failed: false });
+    cancelPoll();
+
+    pollCancelRef.current = pollAttendance({
+      employeeName: employee?.name,
+      onFound: () => {
+        setAttendanceCompleted(true);
+        setProcessingState({ active: false, failed: false });
+        window.location.assign('/operation');
+      },
+      onFailed: () => {
+        setProcessingState({ active: false, failed: true });
+      },
+    });
+  }, [employee?.name, cancelPoll]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -83,7 +156,6 @@ export default function AttendancePage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
-    // validate images (required + size < 10MB)
     const selfieValidation = (() => {
       if (!selfieImageFile) return { ok: false, error: 'Selfie image is required' };
       if (selfieImageFile.size > 10 * 1024 * 1024) return { ok: false, error: 'Selfie image must be less than 10 MB' };
@@ -118,12 +190,10 @@ export default function AttendancePage() {
       ]);
 
       const loginDateTime = getIndiaDateTimeString();
-
       const selfieImageClean = String(selfieImageBase64).split(',')[1] || selfieImageBase64;
       const stallImageClean = String(stallImageBase64).split(',')[1] || stallImageBase64;
       const deviceId = getDeviceId();
 
-      // Send to webhook (n8n) — the webhook backend saves attendance to Supabase
       await sendOperationWebhookPayload({
         location: location?.name,
         employee: employee?.name,
@@ -138,13 +208,22 @@ export default function AttendancePage() {
         },
       });
 
-      // Webhook succeeded — update localStorage flag for immediate feedback
-      setAttendanceCompleted(true);
+      setProcessingState({ active: true, failed: false });
 
-      // Navigate to operation page; the App route guard will verify via Supabase
-      window.location.assign('/operation');
+      pollCancelRef.current = pollAttendance({
+        employeeName: employee?.name,
+        onFound: () => {
+          setAttendanceCompleted(true);
+          setProcessingState({ active: false, failed: false });
+          window.location.assign('/operation');
+        },
+        onFailed: () => {
+          setProcessingState({ active: false, failed: true });
+        },
+      });
     } catch (err) {
       alert(String(err?.message || err));
+      setProcessingState({ active: false, failed: false });
     } finally {
       setIsLoading(false);
     }
@@ -162,12 +241,46 @@ export default function AttendancePage() {
           </div>
         ) : null}
 
-        {!supabaseCheck.loading && supabaseCheck.completed ? null : (
+        {processingState.active ? (
+          <div style={{ marginBottom: 12, color: '#555', fontSize: 14, textAlign: 'center', padding: 20 }}>
+            <div>Processing attendance...</div>
+            <div style={{ fontSize: 12, marginTop: 8, color: '#888' }}>
+              Please wait while we confirm your attendance
+            </div>
+          </div>
+        ) : null}
+
+        {processingState.failed ? (
+          <div style={{ marginBottom: 12 }}>
+            <div
+              style={{
+                color: '#92400e',
+                background: '#fffbeb',
+                border: '1px solid #fde68a',
+                padding: 12,
+                borderRadius: 6,
+                fontSize: 13,
+                textAlign: 'center',
+              }}
+            >
+              Attendance is being processed. Please wait...
+            </div>
+            <div style={{ textAlign: 'center', marginTop: 10, display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <Button onClick={handleRetryPoll}>
+                Retry Check
+              </Button>
+              <Button onClick={() => window.location.assign('/operation')}>
+                Continue to Dashboard
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {!processingState.active && !supabaseCheck.loading && !supabaseCheck.completed && !processingState.failed ? (
           <form onSubmit={onSubmit}>
             <SelectField label="Attendance Status" value={status} onChange={setStatus} options={STATUS_OPTIONS} />
             <InputField label="Remarks" value={remarks} onChange={setRemarks} placeholder="" type="text" />
 
-            {/* Image uploads (backend uploads to imgbb). Mandatory. */}
             <div style={{ marginTop: 12, marginBottom: 8 }}>
               <div style={{ fontSize: 13, marginBottom: 6 }}>Selfie (Branded T-Shirt)</div>
               <input
@@ -208,9 +321,9 @@ export default function AttendancePage() {
               </Button>
             </div>
           </form>
-        )}
-
+        ) : null}
       </FormContainer>
     </div>
   );
 }
+
