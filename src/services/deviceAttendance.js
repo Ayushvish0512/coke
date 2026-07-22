@@ -8,6 +8,40 @@ function toYMD(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
+// ─── In-memory attendance cache ───────────────────────────────────────────────
+// Prevents duplicate Supabase queries across components and navigation.
+// Cache TTL: 5 minutes (matches typical session flows)
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedAttendance = null; // { employeeName: string, completed: boolean, timestamp: number }
+
+/**
+ * Set the attendance cache immediately (used after successful submission).
+ * @param {boolean} value - Whether attendance is completed
+ * @param {string} employeeName - The employee name this result applies to
+ */
+export function setAttendanceCache({ completed, employeeName }) {
+  cachedAttendance = {
+    employeeName,
+    completed: !!completed,
+    timestamp: Date.now(),
+  };
+}
+
+/**
+ * Get cached attendance result if valid (same employee + within TTL).
+ * @param {string} employeeName
+ * @returns {{ completed: boolean } | null}
+ */
+function getValidCache(employeeName) {
+  if (!cachedAttendance) return null;
+  if (cachedAttendance.employeeName !== employeeName) return null;
+  if (Date.now() - cachedAttendance.timestamp > CACHE_TTL_MS) {
+    cachedAttendance = null;
+    return null;
+  }
+  return { completed: cachedAttendance.completed };
+}
+
 // This file writes to the following existing Supabase tables:
 // - login
 // - attendance_completions
@@ -91,6 +125,14 @@ export async function isAttendanceCompletedForDevice({ deviceId } = {}) {
 export async function checkTodayAttendance({ employeeName } = {}) {
   if (!employeeName) throw new Error('employeeName is required');
 
+  // Return cached result if available (avoids duplicate Supabase queries)
+  const cached = getValidCache(employeeName);
+  if (cached !== null) {
+    console.log('[AttendanceCache] Hit for', employeeName, '→', cached.completed);
+    return cached.completed;
+  }
+
+  console.log('[AttendanceCache] Miss for', employeeName, '→ fetching from Supabase');
   const { data, error } = await supabase
     .from('attendance_completions')
     .select('id')
@@ -104,7 +146,16 @@ export async function checkTodayAttendance({ employeeName } = {}) {
     throw error;
   }
 
-  return data && data.length > 0;
+  const completed = data && data.length > 0;
+
+  // Store in cache for subsequent calls
+  cachedAttendance = {
+    employeeName,
+    completed,
+    timestamp: Date.now(),
+  };
+
+  return completed;
 }
 
 

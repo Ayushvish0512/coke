@@ -1,16 +1,23 @@
-# TODO: Attendance Polling Bug Fixes
+# Fix: Reduce Excessive Supabase Attendance Queries
 
-## Status
-- [x] Plan confirmed with user
+## Done
+- [x] Analysis complete: identified all call sites of `checkTodayAttendance()`
 
-## Fixes for Attendance.jsx
-- [x] Fix 1: Close unclosed `<div>` in `processingState.active` block (missing `</div>`)
-- [x] Fix 2: Close unclosed `<div>` tags in `processingState.failed` block (two missing `</div>`)
-- [x] Fix 3: Move `setAttendanceCompleted(true)` into `onFound` callback instead of calling immediately after webhook
-- [x] Fix 4: Add `handleRetryPoll` callback to re-start polling without re-submitting form
-- [x] Fix 5: Add "Retry Check" button alongside "Continue to Dashboard" in failed state
+## Steps
 
-## Testing
-- [ ] Verify JSX structure compiles without errors
-- [ ] Verify polling retry mechanism works end-to-end
+### 1. `src/services/deviceAttendance.js` — Add in-memory cache with TTL
+- [x] Add module-level cache variable with timestamp
+- [x] Return cached result within 5-min TTL
+- [x] Export `setAttendanceCache(value)` for immediate invalidation/update
+- [x] Integrated cache check into `checkTodayAttendance()` — hits cache first, stores on fetch
+
+### 2. `src/App.jsx` — Fix AttendanceGuard re-querying on navigation
+- [x] Removed `location.pathname` from `useEffect` dependency array (changed to `[]`)
+- [x] Added comment explaining why
+
+### 3. `src/pages/Operation.jsx` — Already handled by caching layer (no change needed)
+
+### 4. Verify and test
+- [x] Confirm no unnecessary queries on page navigation
+- [x] Confirm attendance check still works correctly
 

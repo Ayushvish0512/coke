@@ -64,7 +64,10 @@ function AttendanceGuard({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname]);
+    // Only check on mount to avoid re-querying on every route change.
+    // The cache in checkTodayAttendance() will return instant result for
+    // subsequent calls from child pages (e.g. Operation, Attendance).
+  }, []);
 
   // Allow public routes and attendance page through
   if (ATTENDANCE_EXEMPT_ROUTES.includes(location.pathname)) {
